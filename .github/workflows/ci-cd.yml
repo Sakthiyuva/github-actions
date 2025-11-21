@@ -43,12 +43,15 @@ jobs:
       - name: Build & Push Docker Image
         id: build_image
         run: |
+          # Debug secrets
+          echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}"
+
           IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/flask-app:latest"
-          echo "Building Docker image $IMAGE_NAME"
+          echo "Building Docker image: $IMAGE_NAME"
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
 
-          # ✅ Correct output syntax
+          # Correct output syntax for downstream jobs
           echo "image_name=$IMAGE_NAME" >> $GITHUB_OUTPUT
 
   # 3️⃣ Deploy to Kubernetes (Minikube)
@@ -71,8 +74,8 @@ jobs:
 
       - name: Debug IMAGE_NAME
         run: |
-          echo "IMAGE_NAME from previous job:"
-          echo "${{ needs.docker-build.outputs.image_name }}"
+          IMAGE_NAME="${{ needs.docker-build.outputs.image_name }}"
+          echo "IMAGE_NAME from previous job: $IMAGE_NAME"
 
       - name: Deploy App
         run: |
@@ -86,5 +89,4 @@ jobs:
       - name: Get Minikube Service URL
         run: |
           minikube service flask-service --url
-
 
