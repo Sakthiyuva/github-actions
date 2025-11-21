@@ -27,10 +27,10 @@ jobs:
 
   # 2️⃣ Docker Build & Push
   docker-build:
-    needs: build-test
     runs-on: ubuntu-latest
+    needs: build-test
     outputs:
-     image_name: ${{ steps.set_image.outputs.image_name }}
+      image_name: ${{ steps.set_image.outputs.image_name }}
     steps:
       - uses: actions/checkout@v3
 
@@ -41,18 +41,15 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build & Push Docker Image
+        id: set_image
         run: |
-          # Set image name
           IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/flask-app:latest"
-
-          echo "Building Docker image: $IMAGE_NAME"
+          echo "Building Docker image $IMAGE_NAME"
           docker build -t $IMAGE_NAME .
-
-          echo "Pushing Docker image to Docker Hub"
           docker push $IMAGE_NAME
 
-          # Save for next steps
-          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          # Set output for next job
+          echo "::set-output name=image_name::$IMAGE_NAME"
 
   # 3️⃣ Deploy to Kubernetes (Minikube)
   deploy-k8s:
@@ -68,23 +65,17 @@ jobs:
 
       - name: Start Minikube
         run: |
-          # DO NOT use sudo; Docker driver cannot run as root
+          echo "Starting Minikube..."
           minikube start --driver=docker
           minikube status
 
-      - name: Check IMAGE_NAME
-        run: |
-          echo "IMAGE_NAME = $IMAGE_NAME"
-
       - name: Deploy App
         run: |
-          echo "Replacing placeholder in deployment.yml with $IMAGE_NAME"
+          # Get image name from previous job
           IMAGE_NAME="${{ needs.docker-build.outputs.image_name }}"
+          echo "Replacing placeholder in deployment.yml with $IMAGE_NAME"
+
           sed "s|\$IMAGE_NAME|$IMAGE_NAME|g" k8s/deployment.yml > k8s/deployment-temp.yml
-
-          echo "Applying deployment to Kubernetes"
           kubectl apply -f k8s/deployment-temp.yml
-
-          echo "Waiting for rollout to finish"
           kubectl rollout status deployment/flask-app
 
