@@ -29,6 +29,8 @@ jobs:
   docker-build:
     needs: build-test
     runs-on: ubuntu-latest
+    outputs:
+     image_name: ${{ steps.set_image.outputs.image_name }}
     steps:
       - uses: actions/checkout@v3
 
@@ -77,6 +79,7 @@ jobs:
       - name: Deploy App
         run: |
           echo "Replacing placeholder in deployment.yml with $IMAGE_NAME"
+          IMAGE_NAME="${{ needs.docker-build.outputs.image_name }}"
           sed "s|\$IMAGE_NAME|$IMAGE_NAME|g" k8s/deployment.yml > k8s/deployment-temp.yml
 
           echo "Applying deployment to Kubernetes"
