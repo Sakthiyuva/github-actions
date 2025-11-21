@@ -6,7 +6,7 @@ on:
 
 jobs:
 
-  # 1️⃣ Build & Test
+  # 1️⃣ Build & Test App
   build-test:
     runs-on: windows-latest
     steps:
@@ -65,7 +65,11 @@ jobs:
       - name: Deploy App
         run: |
           $IMAGE_NAME=$env:IMAGE_NAME
-          # Replace placeholder in k8s/deployment.yaml
-          (Get-Content k8s\deployment.yaml) -replace '\$IMAGE_NAME', $IMAGE_NAME | Set-Content k8s\deployment-temp.yaml
-          kubectl apply -f k8s\deployment-temp.yaml
+          # Replace placeholder in deployment.yml
+          (Get-Content k8s\deployment.yml) -replace '\$IMAGE_NAME', $IMAGE_NAME | Set-Content k8s\deployment-temp.yml
+
+          # Apply updated deployment
+          kubectl apply -f k8s\deployment-temp.yml
+
+          # Wait until deployment is fully rolled out
           kubectl rollout status deployment/flask-app
