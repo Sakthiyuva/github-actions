@@ -66,7 +66,7 @@ jobs:
 
       - name: Start Minikube
         run: |
-          sudo minikube start --driver=docker
+          minikube start --driver=docker
           minikube status
 
       - name: Deploy App
