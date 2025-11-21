@@ -72,7 +72,7 @@ jobs:
       - name: Deploy App
         run: |
           # Use the image pushed in previous step
-          IMAGE_NAME=$IMAGE_NAME
+          IMAGE_NAME=${IMAGE_NAME}
 
           echo "Replacing placeholder in deployment.yml with $IMAGE_NAME"
           sed "s|\$IMAGE_NAME|$IMAGE_NAME|g" k8s/deployment.yml > k8s/deployment-temp.yml
