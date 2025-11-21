@@ -40,7 +40,7 @@ jobs:
 
       - name: Build & Push Docker Image
         run: |
-          # Correct bash variable assignment
+          # Set image name
           IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/flask-app:latest"
 
           echo "Building Docker image: $IMAGE_NAME"
@@ -49,7 +49,7 @@ jobs:
           echo "Pushing Docker image to Docker Hub"
           docker push $IMAGE_NAME
 
-          # Save for next job
+          # Save for next steps
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
 
   # 3️⃣ Deploy to Kubernetes (Minikube)
@@ -66,14 +66,16 @@ jobs:
 
       - name: Start Minikube
         run: |
+          # DO NOT use sudo; Docker driver cannot run as root
           minikube start --driver=docker
           minikube status
 
+      - name: Check IMAGE_NAME
+        run: |
+          echo "IMAGE_NAME = $IMAGE_NAME"
+
       - name: Deploy App
         run: |
-          # Use the image pushed in previous step
-          IMAGE_NAME=${IMAGE_NAME}
-
           echo "Replacing placeholder in deployment.yml with $IMAGE_NAME"
           sed "s|\$IMAGE_NAME|$IMAGE_NAME|g" k8s/deployment.yml > k8s/deployment-temp.yml
 
@@ -82,3 +84,4 @@ jobs:
 
           echo "Waiting for rollout to finish"
           kubectl rollout status deployment/flask-app
+
