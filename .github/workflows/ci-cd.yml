@@ -48,8 +48,8 @@ jobs:
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
 
-          # Set output for next job
-          echo "::set-output name=image_name::$IMAGE_NAME"
+          # ✅ Correct way to set output for other jobs
+          echo "image_name=$IMAGE_NAME" >> $GITHUB_OUTPUT
 
   # 3️⃣ Deploy to Kubernetes (Minikube)
   deploy-k8s:
@@ -71,11 +71,11 @@ jobs:
 
       - name: Deploy App
         run: |
-          # Get image name from previous job
           IMAGE_NAME="${{ needs.docker-build.outputs.image_name }}"
           echo "Replacing placeholder in deployment.yml with $IMAGE_NAME"
 
           sed "s|\$IMAGE_NAME|$IMAGE_NAME|g" k8s/deployment.yml > k8s/deployment-temp.yml
           kubectl apply -f k8s/deployment-temp.yml
           kubectl rollout status deployment/flask-app
+
 
