@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-test
     outputs:
-      image_name: ${{ steps.set_image.outputs.image_name }}
+      image_name: ${{ steps.build_image.outputs.image_name }}
     steps:
       - uses: actions/checkout@v3
 
@@ -41,14 +41,14 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build & Push Docker Image
-        id: set_image
+        id: build_image
         run: |
           IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/flask-app:latest"
           echo "Building Docker image $IMAGE_NAME"
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
 
-          # ✅ Correct way to set output for other jobs
+          # ✅ Correct output syntax
           echo "image_name=$IMAGE_NAME" >> $GITHUB_OUTPUT
 
   # 3️⃣ Deploy to Kubernetes (Minikube)
@@ -69,6 +69,11 @@ jobs:
           minikube start --driver=docker
           minikube status
 
+      - name: Debug IMAGE_NAME
+        run: |
+          echo "IMAGE_NAME from previous job:"
+          echo "${{ needs.docker-build.outputs.image_name }}"
+
       - name: Deploy App
         run: |
           IMAGE_NAME="${{ needs.docker-build.outputs.image_name }}"
@@ -77,5 +82,9 @@ jobs:
           sed "s|\$IMAGE_NAME|$IMAGE_NAME|g" k8s/deployment.yml > k8s/deployment-temp.yml
           kubectl apply -f k8s/deployment-temp.yml
           kubectl rollout status deployment/flask-app
+
+      - name: Get Minikube Service URL
+        run: |
+          minikube service flask-service --url
 
 
